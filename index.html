@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>Devboy X - Roblox AI Asset Engine</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: #1e293b;
+            --accent: #38bdf8;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+        }
+        body {
+            margin: 0; padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex; height: 100vh; overflow: hidden;
+        }
+        .sidebar {
+            width: 280px; background-color: var(--panel-bg);
+            border-right: 1px solid var(--border);
+            display: flex; flex-direction: column; padding: 20px;
+        }
+        .logo { font-size: 1.3rem; font-weight: bold; color: var(--accent); margin-bottom: 20px; }
+        .new-chat-btn {
+            background: #0284c7; color: white; border: none; padding: 10px;
+            border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 20px;
+            transition: background 0.2s;
+        }
+        .new-chat-btn:hover { background: #0369a1; }
+        
+        .chat-container { flex: 1; display: flex; flex-direction: column; position: relative; }
+        .top-bar {
+            height: 60px; border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: flex-end;
+            padding: 0 30px; gap: 20px; background: rgba(30, 41, 59, 0.5);
+        }
+        .credits-badge {
+            background: #0f172a; border: 1px solid var(--accent);
+            padding: 6px 14px; border-radius: 20px; cursor: pointer;
+            font-size: 0.9rem; font-weight: bold; color: var(--accent);
+            transition: transform 0.2s;
+        }
+        .credits-badge:hover { transform: scale(1.05); }
+        
+        .chat-messages {
+            flex: 1; overflow-y: auto; padding: 30px;
+            display: flex; flex-direction: column; gap: 20px;
+        }
+        .message { max-width: 70%; padding: 15px 20px; border-radius: 12px; line-height: 1.5; font-size: 0.95rem; }
+        .message.ai { background-color: var(--panel-bg); border: 1px solid var(--border); align-self: flex-start; }
+        .message.user { background-color: #0284c7; color: white; align-self: flex-end; }
+        
+        .input-area {
+            padding: 20px 30px; background: var(--bg-color);
+            border-top: 1px solid var(--border); display: flex; gap: 15px; align-items: center;
+        }
+        .engine-select, .prompt-input {
+            background: var(--panel-bg); border: 1px solid var(--border);
+            color: var(--text-main); padding: 12px; border-radius: 8px; outline: none;
+        }
+        .prompt-input { flex: 1; }
+        .send-btn {
+            background: var(--accent); color: #0f172a; border: none;
+            padding: 12px 24px; border-radius: 8px; font-weight: bold; cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .send-btn:hover { opacity: 0.9; }
+
+        .modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 1000;
+        }
+        .modal-content {
+            background: var(--panel-bg); border: 1px solid var(--border);
+            padding: 30px; border-radius: 12px; width: 420px; text-align: center;
+        }
+        .sub-box {
+            background: #0f172a; border: 1px solid var(--border);
+            padding: 15px; margin: 10px 0; border-radius: 8px; cursor: pointer; text-align: left;
+            transition: border-color 0.2s;
+        }
+        .sub-box:hover { border-color: var(--accent); }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="logo">⚡ Devboy X</div>
+        <button class="new-chat-btn" onclick="location.reload()">+ Nowy projekt</button>
+        <div style="color: var(--text-muted); font-size: 0.85rem; margin-top: 10px;">HISTORIA</div>
+        <div style="margin-top: 10px; font-size: 0.9rem; color: var(--text-muted); cursor: pointer;">Ognisty miecz RPG</div>
+    </div>
+
+    <div class="chat-container">
+        <div class="top-bar">
+            <span style="font-size: 0.85rem; color: var(--text-muted);">Silnik:</span>
+            <select id="engineSelect" class="engine-select" style="padding: 6px 10px; font-size: 0.85rem;">
+                <option value="Dev AI v1">Dev AI v1 (4 kredyty)</option>
+                <option value="Dev AI Pro">Dev AI Pro (8 kredytów)</option>
+                <option value="Dev AI Hyper">Dev AI Hyper (14 kredytów)</option>
+            </select>
+            <div class="credits-badge" onclick="openSubModal()">
+                🪙 Kredyty: <span id="creditsSpan">30</span>
+            </div>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+            <div class="message ai">
+                Siema! Jestem Devboy X. Opisz asset do Robloxa, a wyselekcjonuję 2 najlepsze propozycje!
+            </div>
+        </div>
+
+        <div class="input-area">
+            <input type="text" id="promptInput" class="prompt-input" placeholder="Co chcesz stworzyć pod Robloxa..." onkeydown="if(event.key==='Enter') sendPrompt()">
+            <button class="send-btn" onclick="sendPrompt()">Generuj</button>
+        </div>
+    </div>
+
+    <!-- Modal Subskrypcji i Płatności -->
+    <div class="modal" id="subModal">
+        <div class="modal-content">
+            <h3>⚡ Wybierz Pakiet Subskrypcji</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">Wybierz ofertę i opłać BLIKiem lub Paysafecard:</p>
+            
+            <div class="sub-box" onclick="selectPackage('Pakiet Standard (4 zł / 150 kredytów)')">
+                <b>Pakiet Standard – 4 zł</b><br>
+                <span style="font-size: 0.85rem; color: var(--text-muted);">150 kredytów dziennie + Dev AI Pro</span>
+            </div>
+
+            <div class="sub-box" onclick="selectPackage('Pakiet Ultra (10 zł / 600 kredytów)')" style="border-color: var(--accent);">
+                <b>Pakiet Ultra – 10 zł</b><br>
+                <span style="font-size: 0.85rem; color: var(--accent);">600 kredytów dziennie + Wszystkie silniki</span>
+            </div>
+
+            <div style="margin-top: 15px;">
+                <button onclick="openAdminLogin()" style="background: transparent; border: none; color: var(--text-muted); font-size: 0.8rem; cursor: pointer; text-decoration: underline;">Panel Właściciela (Admin)</button>
+            </div>
+            <button onclick="closeSubModal()" style="margin-top: 10px; background: transparent; border: 1px solid var(--border); color: var(--text-muted); padding: 6px 14px; border-radius: 6px; cursor: pointer;">Zamknij</button>
+        </div>
+    </div>
+
+    <script>
+        const creditsSpan = document.getElementById('creditsSpan');
+        const chatMessages = document.getElementById('chatMessages');
+        const promptInput = document.getElementById('promptInput');
+        const engineSelect = document.getElementById('engineSelect');
+        const subModal = document.getElementById('subModal');
+
+        function openSubModal() { subModal.style.display = 'flex'; }
+        function closeSubModal() { subModal.style.display = 'none'; }
+
+        function selectPackage(pkgName) {
+            const code = prompt(`Wybrałeś: ${pkgName}.\nWprowadź kod BLIK (6 cyfr) lub kod Paysafecard (PSC):`);
+            if (!code) return;
+
+            let method = code.length === 6 ? 'blik' : 'psc';
+
+            fetch('/api/pay', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ method: method, code: code, package: pkgName })
+            })
+            .then(res => res.json())
+            .then(data => {
+                alert(data.message);
+                closeSubModal();
+            });
+        }
+
+        function openAdminLogin() {
+            const pwd = prompt("Podaj hasło administratora:");
+            if (!pwd) return;
+
+            fetch('/api/admin/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: pwd })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    let info = "PANEL ADMINISTRATORA - Zgłoszenia wpłat:\n\n";
+                    if (data.transactions.length === 0) info += "Brak oczekujących transakcji.";
+                    data.transactions.forEach((t, i) => {
+                        info += `${i+1}. Pakiet: ${t.package} | Metoda: ${t.method.toUpperCase()} | Kod: ${t.code} | Status: ${t.status}\n`;
+                    });
+                    alert(info);
+                } else {
+                    alert(data.error);
+                }
+            });
+        }
+
+        async function sendPrompt() {
+            const text = promptInput.value.trim();
+            const selectedModel = engineSelect.value;
+            if (!text) return;
+
+            let requiredCredits = 4;
+            if (selectedModel === "Dev AI Pro") requiredCredits = 8;
+            if (selectedModel === "Dev AI Hyper") requiredCredits = 14;
+
+            let currentCredits = parseInt(creditsSpan.innerText);
+            if (currentCredits < requiredCredits) {
+                alert("Brak kredytów! Kliknij w monetki u góry, aby dokupić subskrypcję.");
+                return;
+            }
+
+            const userMsg = document.createElement('div');
+            userMsg.className = 'message user';
+            userMsg.innerText = text;
+            chatMessages.appendChild(userMsg);
+            promptInput.value = '';
+
+            const loadingId = 'load-' + Date.now();
+            const loadingMsg = document.createElement('div');
+            loadingMsg.className = 'message ai';
+            loadingMsg.id = loadingId;
+            loadingMsg.innerHTML = `⏳ [${selectedModel}] Generuję 3 warianty i wybieram 2 najlepsze...`;
+            chatMessages.appendChild(loadingMsg);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            try {
+                const response = await fetch('/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: text, model: selectedModel })
+                });
+                const data = await response.json();
+                const loadingBubble = document.getElementById(loadingId);
+                
+                if (data.success) {
+                    creditsSpan.innerText = Math.max(0, parseInt(creditsSpan.innerText) - data.credits_used);
+                    loadingBubble.innerHTML = `
+                        <div style="font-size: 0.8rem; color: #38bdf8; font-weight: bold; margin-bottom: 6px;">
+                            [${selectedModel}] Wygenerowano pomyślnie! (-${data.credits_used} kredytów)
+                        </div>
+                        <div>${data.ai_output}</div>
+                        <br>
+                        <button style="background: #0284c7; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer;" onclick="alert('Pobieranie assetu (.RBXM) rozpoczęte!')">
+                            📥 Pobierz Wyselekcjonowane Assety
+                        </button>
+                    `;
+                } else {
+                    loadingBubble.innerHTML = `❌ Błąd silnika: ${data.error}`;
+                }
+            } catch (err) {
+                document.getElementById(loadingId).innerHTML = `❌ Błąd połączenia z serwerem.`;
+            }
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+    </script>
+</body>
+</html>
