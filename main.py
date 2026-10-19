@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
@@ -5,8 +6,9 @@ from google import genai
 
 app = FastAPI(title="Devboy X Full Economic Engine")
 
-# Klucz API Google Gemini
-client = genai.Client(api_key="AQ.Ab8RN6KTfiV8lPI-MfNBGH-Qx2eVryHro0hg82USpO-cOUrSQA")
+# Bezpieczne pobieranie klucza API ze zmiennych środowiskowych Rendera
+api_key = os.environ.get("GEMINI_API_KEY")
+client = genai.Client(api_key=api_key)
 
 # Baza w pamięci na zgłoszenia płatności
 admin_database_transactions = [] 
@@ -50,7 +52,7 @@ def generate(data: PromptData):
 
         try:
             response = client.models.generate_content(
-                model="gemini-3.8-flash",
+                model="gemini-2.5-flash",
                 contents=system_instruction
             )
             ai_text = response.text
